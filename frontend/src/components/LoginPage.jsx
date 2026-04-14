@@ -10,6 +10,13 @@ export default function LoginPage({ onLogin, onRegister, error }) {
   });
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState("");
+  const tabBaseClass =
+    "rounded-xl border px-4 py-2 text-sm font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2";
+  const activeTabClass = "border-sky-600 bg-sky-600 text-white shadow-md shadow-sky-500/25";
+  const inactiveTabClass =
+    "border-slate-300 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700";
+  const inputClass =
+    "mt-2 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 shadow-sm transition placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200";
 
   const updateField = (event) => {
     setForm((current) => ({
@@ -40,34 +47,36 @@ export default function LoginPage({ onLogin, onRegister, error }) {
   };
 
   return (
-    <div className="auth-shell">
-      <div className="auth-card">
-        <div className="auth-copy">
-          <p className="eyebrow">Standalone doctor app</p>
-          <h1>HealthGuard Doctor Interface</h1>
-          <p>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#e0f2fe_0%,_#f8fafc_42%,_#e0e7ff_100%)] px-4 py-10 sm:px-8">
+      <div className="mx-auto grid w-full max-w-5xl gap-6 rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_75px_-30px_rgba(15,23,42,0.55)] backdrop-blur-md md:grid-cols-[1.1fr_1fr] md:p-8">
+        <div className="space-y-3">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-700">Standalone doctor app</p>
+          <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+            HealthGuard Doctor Interface
+          </h1>
+          <p className="text-sm leading-relaxed text-slate-600 sm:text-base">
             This application authenticates doctors locally, while patient vitals and history are
             pulled from your HealthGuard Supabase database through the doctor backend.
           </p>
           {mode === "register" && (
-            <p className="muted-text">
+            <p className="rounded-2xl border border-cyan-200 bg-cyan-50/80 px-4 py-3 text-sm leading-relaxed text-cyan-800">
               A doctor ID is generated when the account is created. Share that ID with the patient
               so their device can assign itself to your dashboard.
             </p>
           )}
         </div>
 
-        <div>
-          <div className="auth-tabs">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+          <div className="mb-4 flex flex-wrap gap-2">
             <button
-              className={mode === "login" ? "tab active" : "tab"}
+              className={`${tabBaseClass} ${mode === "login" ? activeTabClass : inactiveTabClass}`}
               onClick={() => setMode("login")}
               type="button"
             >
               Login
             </button>
             <button
-              className={mode === "register" ? "tab active" : "tab"}
+              className={`${tabBaseClass} ${mode === "register" ? activeTabClass : inactiveTabClass}`}
               onClick={() => setMode("register")}
               type="button"
             >
@@ -75,15 +84,22 @@ export default function LoginPage({ onLogin, onRegister, error }) {
             </button>
           </div>
 
-          <form className="auth-form" onSubmit={handleSubmit}>
-            <label>
+          <form className="grid gap-4" onSubmit={handleSubmit}>
+            <label className="text-sm font-semibold text-slate-700">
               Username
-              <input name="username" onChange={updateField} value={form.username} required />
+              <input
+                className={inputClass}
+                name="username"
+                onChange={updateField}
+                value={form.username}
+                required
+              />
             </label>
 
-            <label>
+            <label className="text-sm font-semibold text-slate-700">
               Password
               <input
+                className={inputClass}
                 name="password"
                 onChange={updateField}
                 type="password"
@@ -94,14 +110,21 @@ export default function LoginPage({ onLogin, onRegister, error }) {
 
             {mode === "register" && (
               <>
-                <label>
+                <label className="text-sm font-semibold text-slate-700">
                   Full name
-                  <input name="fullName" onChange={updateField} value={form.fullName} required />
+                  <input
+                    className={inputClass}
+                    name="fullName"
+                    onChange={updateField}
+                    value={form.fullName}
+                    required
+                  />
                 </label>
 
-                <label>
+                <label className="text-sm font-semibold text-slate-700">
                   Specialization
                   <input
+                    className={inputClass}
                     name="specialization"
                     onChange={updateField}
                     value={form.specialization}
@@ -111,9 +134,17 @@ export default function LoginPage({ onLogin, onRegister, error }) {
               </>
             )}
 
-            {(localError || error) && <p className="error-text">{localError || error}</p>}
+            {(localError || error) && (
+              <p className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
+                {localError || error}
+              </p>
+            )}
 
-            <button className="primary-button" disabled={submitting} type="submit">
+            <button
+              className="rounded-xl border border-sky-600 bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-500/30 transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={submitting}
+              type="submit"
+            >
               {submitting ? "Please wait..." : mode === "login" ? "Sign in" : "Create account"}
             </button>
           </form>

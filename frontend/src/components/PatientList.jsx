@@ -35,19 +35,21 @@ function formatLatestVitals(vitals) {
 
 export default function PatientList({ patients, selectedPatientId, onSelect, loading }) {
   return (
-    <section className="panel">
-      <div className="panel-header">
+    <section className="rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-[0_20px_55px_-30px_rgba(15,23,42,0.45)] backdrop-blur-md">
+      <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <p className="eyebrow">Patients</p>
-          <h2>Patient list</h2>
+          <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-cyan-700">Patients</p>
+          <h2 className="text-xl font-black tracking-tight text-slate-900">Patient list</h2>
         </div>
-        <span className="counter">{patients.length}</span>
+        <span className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+          {patients.length}
+        </span>
       </div>
 
       {loading ? (
-        <p className="muted-text">Loading patients from the centralized backend...</p>
+        <p className="text-sm text-slate-500">Loading patients from the centralized backend...</p>
       ) : (
-        <div className="patient-list">
+        <div className="grid gap-3">
           {patients.map((patient) => {
             const patientId = getPatientId(patient);
             const isSelected = String(patientId) === String(selectedPatientId);
@@ -60,23 +62,33 @@ export default function PatientList({ patients, selectedPatientId, onSelect, loa
             return (
               <button
                 key={patientId}
-                className={isSelected ? "patient-card selected" : "patient-card"}
+                className={
+                  isSelected
+                    ? "rounded-2xl border border-cyan-400 bg-cyan-50/80 p-4 text-left shadow-sm transition"
+                    : "rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left transition hover:border-cyan-300 hover:bg-cyan-50/60"
+                }
                 onClick={() => onSelect(patientId)}
                 type="button"
               >
-                <div className="patient-card-top">
+                <div className="flex items-start justify-between gap-3">
                   <div>
-                    <strong>{getPatientName(patient)}</strong>
-                    <p className="muted-text">
+                    <strong className="text-base font-bold text-slate-900">{getPatientName(patient)}</strong>
+                    <p className="mt-1 text-sm text-slate-500">
                       Age {getAge(patient.date_of_birth || patient.dateOfBirth)} | Blood type{" "}
                       {patient.blood_type || patient.bloodType || "-"}
                     </p>
                   </div>
-                  <span className={activeAlerts > 0 ? "badge danger" : "badge"}>
+                  <span
+                    className={
+                      activeAlerts > 0
+                        ? "inline-flex items-center rounded-full border border-rose-200 bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-700"
+                        : "inline-flex items-center rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700"
+                    }
+                  >
                     {activeAlerts > 0 ? `${activeAlerts} alerts` : "Stable"}
                   </span>
                 </div>
-                <p className="muted-text">{formatLatestVitals(patient.latestVitals)}</p>
+                <p className="mt-2 text-sm text-slate-600">{formatLatestVitals(patient.latestVitals)}</p>
               </button>
             );
           })}

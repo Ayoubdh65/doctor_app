@@ -33,6 +33,11 @@ export default function AppointmentManager({ patients, selectedPatient }) {
     status: "scheduled",
     notes: "",
   });
+  const inputClass =
+    "mt-2 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 shadow-sm transition placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200";
+  const labelClass = "text-sm font-semibold text-slate-700";
+  const actionButtonClass =
+    "rounded-xl border px-3 py-1.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
 
   const patientOptions = useMemo(
     () =>
@@ -145,22 +150,30 @@ export default function AppointmentManager({ patients, selectedPatient }) {
   };
 
   return (
-    <section className="panel">
-      <div className="panel-header">
+    <section className="rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-[0_20px_55px_-30px_rgba(15,23,42,0.45)] backdrop-blur-md">
+      <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <p className="eyebrow">Appointments</p>
-          <h2>Appointment management</h2>
+          <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-cyan-700">Appointments</p>
+          <h2 className="text-xl font-black tracking-tight text-slate-900">Appointment management</h2>
         </div>
-        <span className="counter">{appointments.length}</span>
+        <span className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+          {appointments.length}
+        </span>
       </div>
 
-      <div className="split-grid">
-        <form className="subpanel form-grid" onSubmit={handleSubmit}>
-          <h3>{editingId ? "Edit appointment" : "Create appointment"}</h3>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <form className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4" onSubmit={handleSubmit}>
+          <h3 className="text-lg font-bold text-slate-900">{editingId ? "Edit appointment" : "Create appointment"}</h3>
 
-          <label>
+          <label className={labelClass}>
             Patient
-            <select name="patientId" onChange={updateField} value={form.patientId} required>
+            <select
+              className={inputClass}
+              name="patientId"
+              onChange={updateField}
+              value={form.patientId}
+              required
+            >
               <option value="">Select a patient</option>
               {patientOptions.map((patient) => (
                 <option key={patient.id} value={patient.id}>
@@ -170,9 +183,10 @@ export default function AppointmentManager({ patients, selectedPatient }) {
             </select>
           </label>
 
-          <label>
+          <label className={labelClass}>
             Title
             <input
+              className={inputClass}
               name="title"
               onChange={updateField}
               type="text"
@@ -182,9 +196,10 @@ export default function AppointmentManager({ patients, selectedPatient }) {
             />
           </label>
 
-          <label>
+          <label className={labelClass}>
             Location
             <input
+              className={inputClass}
               name="location"
               onChange={updateField}
               type="text"
@@ -193,9 +208,10 @@ export default function AppointmentManager({ patients, selectedPatient }) {
             />
           </label>
 
-          <label>
+          <label className={labelClass}>
             Scheduled at
             <input
+              className={inputClass}
               name="scheduledAt"
               onChange={updateField}
               type="datetime-local"
@@ -204,9 +220,10 @@ export default function AppointmentManager({ patients, selectedPatient }) {
             />
           </label>
 
-          <label>
+          <label className={labelClass}>
             Duration (minutes)
             <input
+              className={inputClass}
               min="5"
               name="duration"
               onChange={updateField}
@@ -216,47 +233,60 @@ export default function AppointmentManager({ patients, selectedPatient }) {
             />
           </label>
 
-          <label>
+          <label className={labelClass}>
             Status
-            <select name="status" onChange={updateField} value={form.status}>
+            <select className={inputClass} name="status" onChange={updateField} value={form.status}>
               <option value="scheduled">Scheduled</option>
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
           </label>
 
-          <label>
+          <label className={labelClass}>
             Notes
-            <textarea name="notes" onChange={updateField} rows="4" value={form.notes} />
+            <textarea className={inputClass} name="notes" onChange={updateField} rows="4" value={form.notes} />
           </label>
 
-          {message && <p className="success-text">{message}</p>}
-          {error && <p className="error-text">{error}</p>}
+          {message && (
+            <p className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+              {message}
+            </p>
+          )}
+          {error && <p className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">{error}</p>}
 
-          <div className="button-row">
-            <button className="primary-button" type="submit">
+          <div className="flex flex-wrap gap-2">
+            <button
+              className="rounded-xl border border-sky-600 bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-500/30 transition hover:bg-sky-700"
+              type="submit"
+            >
               {editingId ? "Save changes" : "Create appointment"}
             </button>
             {editingId && (
-              <button className="secondary-button" onClick={resetForm} type="button">
+              <button
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                onClick={resetForm}
+                type="button"
+              >
                 Cancel edit
               </button>
             )}
           </div>
         </form>
 
-        <div className="subpanel">
-          <h3>Upcoming appointments</h3>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+          <h3 className="text-lg font-bold text-slate-900">Upcoming appointments</h3>
           {upcoming.length === 0 ? (
-            <p className="muted-text">No upcoming appointments.</p>
+            <p className="mt-2 text-sm text-slate-500">No upcoming appointments.</p>
           ) : (
-            <ul className="stack-list">
+            <ul className="mt-3 grid gap-2">
               {upcoming.map((appointment) => (
-                <li key={appointment.id} className="list-card">
-                  <strong>{patientLabelById[appointment.patientId] || `Patient ${appointment.patientId}`}</strong>
-                  <span>{appointment.title}</span>
-                  <span>{new Date(appointment.scheduledAt).toLocaleString()}</span>
-                  <span>{appointment.duration} minutes</span>
+                <li key={appointment.id} className="grid gap-1 rounded-xl border border-slate-200 bg-white p-3 text-sm">
+                  <strong className="text-slate-900">
+                    {patientLabelById[appointment.patientId] || `Patient ${appointment.patientId}`}
+                  </strong>
+                  <span className="text-slate-700">{appointment.title}</span>
+                  <span className="text-slate-600">{new Date(appointment.scheduledAt).toLocaleString()}</span>
+                  <span className="font-medium text-slate-700">{appointment.duration} minutes</span>
                 </li>
               ))}
             </ul>
@@ -264,42 +294,46 @@ export default function AppointmentManager({ patients, selectedPatient }) {
         </div>
       </div>
 
-      <div className="subpanel">
-        <h3>All appointments</h3>
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+        <h3 className="text-lg font-bold text-slate-900">All appointments</h3>
         {appointments.length === 0 ? (
-          <p className="muted-text">No appointments created yet.</p>
+          <p className="mt-2 text-sm text-slate-500">No appointments created yet.</p>
         ) : (
-          <div className="table-shell">
-            <table>
-              <thead>
+          <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+            <table className="w-full border-collapse text-sm">
+              <thead className="bg-slate-100 text-slate-700">
                 <tr>
-                  <th>Patient</th>
-                  <th>Title</th>
-                  <th>Scheduled</th>
-                  <th>Status</th>
-                  <th>Duration</th>
-                  <th>Actions</th>
+                  <th className="px-3 py-2 text-left font-semibold">Patient</th>
+                  <th className="px-3 py-2 text-left font-semibold">Title</th>
+                  <th className="px-3 py-2 text-left font-semibold">Scheduled</th>
+                  <th className="px-3 py-2 text-left font-semibold">Status</th>
+                  <th className="px-3 py-2 text-left font-semibold">Duration</th>
+                  <th className="px-3 py-2 text-left font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {appointments.map((appointment) => (
-                  <tr key={appointment.id}>
-                    <td>{patientLabelById[appointment.patientId] || appointment.patientId}</td>
-                    <td>{appointment.title}</td>
-                    <td>{new Date(appointment.scheduledAt).toLocaleString()}</td>
-                    <td>{appointment.status}</td>
-                    <td>{appointment.duration} min</td>
-                    <td>
-                      <div className="button-row">
+                  <tr key={appointment.id} className="border-t border-slate-100 text-slate-700">
+                    <td className="px-3 py-2 align-top">{patientLabelById[appointment.patientId] || appointment.patientId}</td>
+                    <td className="px-3 py-2 align-top">{appointment.title}</td>
+                    <td className="px-3 py-2 align-top">{new Date(appointment.scheduledAt).toLocaleString()}</td>
+                    <td className="px-3 py-2 align-top">
+                      <span className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-semibold capitalize text-slate-700">
+                        {appointment.status}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 align-top">{appointment.duration} min</td>
+                    <td className="px-3 py-2 align-top">
+                      <div className="flex flex-wrap gap-2">
                         <button
-                          className="secondary-button"
+                          className={`${actionButtonClass} border-slate-300 bg-white text-slate-700 hover:bg-slate-100 focus-visible:ring-slate-300`}
                           onClick={() => handleEdit(appointment)}
                           type="button"
                         >
                           Edit
                         </button>
                         <button
-                          className="danger-button"
+                          className={`${actionButtonClass} border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 focus-visible:ring-rose-300`}
                           onClick={() => handleDelete(appointment.id)}
                           type="button"
                         >
