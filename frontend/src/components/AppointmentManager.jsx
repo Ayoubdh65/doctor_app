@@ -18,6 +18,35 @@ function getPatientId(patient) {
   return patient?.id ?? patient?.uuid ?? "";
 }
 
+function getMinimumAppointmentDateTime() {
+  const date = new Date();
+  date.setSeconds(0, 0);
+  const pad = (item) => String(item).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+    date.getHours()
+  )}:${pad(date.getMinutes())}`;
+}
+
+function getScheduleFieldError(message) {
+  if (!message) {
+    return "";
+  }
+
+  if (message.includes("overlaps another appointment")) {
+    return "This slot is already taken, choose another time.";
+  }
+
+  if (message.includes("cannot be before the current date and time")) {
+    return "Choose a future date and time for the appointment.";
+  }
+
+  if (message.includes("valid appointment date and time")) {
+    return "Please pick a valid date and time.";
+  }
+
+  return "";
+}
+
 export default function AppointmentManager({ patients, selectedPatient }) {
   const [appointments, setAppointments] = useState([]);
   const [upcoming, setUpcoming] = useState([]);
@@ -30,9 +59,10 @@ export default function AppointmentManager({ patients, selectedPatient }) {
     location: "",
     scheduledAt: "",
     duration: 30,
-    status: "scheduled",
     notes: "",
   });
+  const minimumAppointmentDateTime = getMinimumAppointmentDateTime();
+  const scheduleFieldError = getScheduleFieldError(error);
   const inputClass =
     "mt-2 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 shadow-sm transition placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200";
   const labelClass = "text-sm font-semibold text-slate-700";
@@ -97,7 +127,6 @@ export default function AppointmentManager({ patients, selectedPatient }) {
       location: "",
       scheduledAt: "",
       duration: 30,
-      status: "scheduled",
       notes: "",
     });
   };
@@ -131,21 +160,23 @@ export default function AppointmentManager({ patients, selectedPatient }) {
       location: appointment.location || "",
       scheduledAt: toInputDateTime(appointment.scheduledAt),
       duration: appointment.duration,
-      status: appointment.status,
       notes: appointment.notes || "",
     });
   };
 
-  const handleDelete = async (appointmentId) => {
+  const handleCancelAppointment = async (appointmentId) => {
     setMessage("");
     setError("");
 
     try {
-      await api.deleteAppointment(appointmentId);
-      setMessage("Appointment deleted");
+      await api.cancelAppointment(appointmentId);
+      setMessage("Appointment canceled and the patient will be notified");
+      if (editingId === appointmentId) {
+        resetForm();
+      }
       await loadAppointments();
-    } catch (deleteError) {
-      setError(deleteError.message);
+    } catch (cancelError) {
+      setError(cancelError.message);
     }
   };
 
@@ -212,12 +243,18 @@ export default function AppointmentManager({ patients, selectedPatient }) {
             Scheduled at
             <input
               className={inputClass}
+              min={minimumAppointmentDateTime}
               name="scheduledAt"
               onChange={updateField}
               type="datetime-local"
               value={form.scheduledAt}
               required
             />
+            {scheduleFieldError && (
+              <span className="mt-2 block text-sm font-medium text-rose-600">
+                {scheduleFieldError}
+              </span>
+            )}
           </label>
 
           <label className={labelClass}>
@@ -231,15 +268,6 @@ export default function AppointmentManager({ patients, selectedPatient }) {
               value={form.duration}
               required
             />
-          </label>
-
-          <label className={labelClass}>
-            Status
-            <select className={inputClass} name="status" onChange={updateField} value={form.status}>
-              <option value="scheduled">Scheduled</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
           </label>
 
           <label className={labelClass}>
@@ -306,7 +334,6 @@ export default function AppointmentManager({ patients, selectedPatient }) {
                   <th className="px-3 py-2 text-left font-semibold">Patient</th>
                   <th className="px-3 py-2 text-left font-semibold">Title</th>
                   <th className="px-3 py-2 text-left font-semibold">Scheduled</th>
-                  <th className="px-3 py-2 text-left font-semibold">Status</th>
                   <th className="px-3 py-2 text-left font-semibold">Duration</th>
                   <th className="px-3 py-2 text-left font-semibold">Actions</th>
                 </tr>
@@ -317,11 +344,6 @@ export default function AppointmentManager({ patients, selectedPatient }) {
                     <td className="px-3 py-2 align-top">{patientLabelById[appointment.patientId] || appointment.patientId}</td>
                     <td className="px-3 py-2 align-top">{appointment.title}</td>
                     <td className="px-3 py-2 align-top">{new Date(appointment.scheduledAt).toLocaleString()}</td>
-                    <td className="px-3 py-2 align-top">
-                      <span className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-semibold capitalize text-slate-700">
-                        {appointment.status}
-                      </span>
-                    </td>
                     <td className="px-3 py-2 align-top">{appointment.duration} min</td>
                     <td className="px-3 py-2 align-top">
                       <div className="flex flex-wrap gap-2">
@@ -334,10 +356,10 @@ export default function AppointmentManager({ patients, selectedPatient }) {
                         </button>
                         <button
                           className={`${actionButtonClass} border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 focus-visible:ring-rose-300`}
-                          onClick={() => handleDelete(appointment.id)}
+                          onClick={() => handleCancelAppointment(appointment.id)}
                           type="button"
                         >
-                          Delete
+                          Cancel Appointment
                         </button>
                       </div>
                     </td>

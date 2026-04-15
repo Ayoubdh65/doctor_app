@@ -115,6 +115,11 @@ export const api = {
       body: JSON.stringify(payload),
     });
   },
+  cancelAppointment(id) {
+    return request(`/appointments/${id}/cancel`, {
+      method: "POST",
+    });
+  },
   deleteAppointment(id) {
     return request(`/appointments/${id}`, {
       method: "DELETE",

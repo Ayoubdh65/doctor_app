@@ -83,7 +83,7 @@ router.post("/generate", async (req, res, next) => {
   try {
     const hours = periodToHours(period);
     const [patient, latestVitals, vitalsStats, alerts, alertStats] = await Promise.all([
-      getPatientById(patientId),
+      getPatientById(patientId, req.doctor.sub),
       getLatestVitals(patientId),
       getVitalsStats(patientId, hours),
       getAlerts(patientId),

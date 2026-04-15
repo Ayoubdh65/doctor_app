@@ -6,6 +6,7 @@ import { initDb } from "./db.js";
 import appointmentsRoutes from "./routes/appointments.js";
 import authRoutes from "./routes/auth.js";
 import patientsRoutes from "./routes/patients.js";
+import publicRoutes from "./routes/public.js";
 import reportsRoutes from "./routes/reports.js";
 
 assertRequiredConfig();
@@ -33,6 +34,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/public", publicRoutes);
 app.use("/api/patients", patientsRoutes);
 app.use("/api/appointments", appointmentsRoutes);
 app.use("/api/reports", reportsRoutes);

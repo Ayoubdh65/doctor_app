@@ -60,8 +60,8 @@ export default function LoginPage({ onLogin, onRegister, error }) {
           </p>
           {mode === "register" && (
             <p className="rounded-2xl border border-cyan-200 bg-cyan-50/80 px-4 py-3 text-sm leading-relaxed text-cyan-800">
-              A doctor ID is generated when the account is created. Share that ID with the patient
-              so their device can assign itself to your dashboard.
+              A shareable doctor code is generated when the account is created. Share that code
+              with the patient so their device can assign itself to your dashboard.
             </p>
           )}
         </div>

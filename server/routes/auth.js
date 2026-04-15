@@ -1,7 +1,7 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 
-import { db } from "../db.js";
+import { db, generateDoctorInviteCode } from "../db.js";
 import { requireAuth, signDoctorToken } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -9,6 +9,7 @@ const router = express.Router();
 function sanitizeDoctor(row) {
   return {
     id: row.id,
+    inviteCode: row.invite_code,
     username: row.username,
     fullName: row.full_name,
     specialization: row.specialization,
@@ -31,12 +32,13 @@ router.post("/register", async (req, res) => {
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
+  const inviteCode = generateDoctorInviteCode();
   const result = db
     .prepare(`
-      INSERT INTO doctors (username, password, full_name, specialization)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO doctors (username, password, full_name, specialization, invite_code)
+      VALUES (?, ?, ?, ?, ?)
     `)
-    .run(normalizedUsername, hashedPassword, fullName.trim(), specialization.trim());
+    .run(normalizedUsername, hashedPassword, fullName.trim(), specialization.trim(), inviteCode);
 
   const doctor = db.prepare("SELECT * FROM doctors WHERE id = ?").get(result.lastInsertRowid);
   const token = signDoctorToken(doctor);

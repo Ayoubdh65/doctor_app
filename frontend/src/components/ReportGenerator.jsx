@@ -10,7 +10,12 @@ function getPatientName(patient) {
   return [patient?.first_name, patient?.last_name].filter(Boolean).join(" ") || patient?.name || "-";
 }
 
-export default function ReportGenerator({ selectedPatient }) {
+export default function ReportGenerator({
+  patients = [],
+  selectedPatient,
+  selectedPatientId,
+  onSelectPatient,
+}) {
   const [period, setPeriod] = useState("24h");
   const [report, setReport] = useState(null);
   const [reports, setReports] = useState([]);
@@ -29,17 +34,17 @@ export default function ReportGenerator({ selectedPatient }) {
   };
 
   useEffect(() => {
-    const patientId = getPatientId(selectedPatient);
+    const patientId = selectedPatientId || getPatientId(selectedPatient);
     setReport(null);
     if (patientId) {
       loadReports(patientId);
     } else {
       setReports([]);
     }
-  }, [selectedPatient]);
+  }, [selectedPatient, selectedPatientId]);
 
   const generateReport = async () => {
-    const patientId = getPatientId(selectedPatient);
+    const patientId = selectedPatientId || getPatientId(selectedPatient);
     if (!patientId) {
       return;
     }
@@ -70,6 +75,10 @@ export default function ReportGenerator({ selectedPatient }) {
     }
   };
 
+  const activePatientId = selectedPatientId || getPatientId(selectedPatient) || "";
+  const activePatient =
+    patients.find((patient) => String(getPatientId(patient)) === String(activePatientId)) || selectedPatient;
+
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-[0_20px_55px_-30px_rgba(15,23,42,0.45)] backdrop-blur-md">
       <div className="mb-4 flex items-start justify-between gap-3">
@@ -82,13 +91,31 @@ export default function ReportGenerator({ selectedPatient }) {
         </span>
       </div>
 
-      {!selectedPatient ? (
+      {!activePatientId ? (
         <p className="text-sm text-slate-500">Select a patient first to generate a doctor report.</p>
       ) : (
         <>
           <div className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <label className="grid gap-1 text-sm font-semibold text-slate-700">
+              Patient
+              <select
+                className={selectClass}
+                onChange={(event) => onSelectPatient?.(event.target.value)}
+                value={activePatientId}
+              >
+                <option value="">Select a patient</option>
+                {patients.map((patient) => {
+                  const patientId = getPatientId(patient);
+                  return (
+                    <option key={patientId} value={patientId}>
+                      {getPatientName(patient)}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
             <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-900">
-              <strong>Selected patient:</strong> {getPatientName(selectedPatient)}
+              <strong>Selected patient:</strong> {getPatientName(activePatient)}
             </div>
             <label className="grid gap-1 text-sm font-semibold text-slate-700">
               Period

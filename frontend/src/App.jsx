@@ -51,7 +51,9 @@ export default function App() {
             Signed in as {doctorData.doctor.fullName} (
             {doctorData.doctor.specialization || "General"})
           </p>
-          <p className="text-sm font-medium text-slate-500">Doctor ID: {doctorData.doctor.id}</p>
+          <p className="text-sm font-medium text-slate-500">
+            Doctor Code: {doctorData.doctor.inviteCode || "Pending"}
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -126,7 +128,12 @@ export default function App() {
 
       {view === "reports" && (
         <div className="mx-auto w-full max-w-[1400px]">
-          <ReportGenerator selectedPatient={doctorData.selectedPatient} />
+          <ReportGenerator
+            patients={doctorData.patients}
+            selectedPatient={doctorData.selectedPatient}
+            selectedPatientId={doctorData.selectedPatientId}
+            onSelectPatient={doctorData.selectPatient}
+          />
         </div>
       )}
     </div>

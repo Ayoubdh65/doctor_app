@@ -1,4 +1,5 @@
 import Database from "better-sqlite3";
+import crypto from "crypto";
 
 import { config } from "./config.js";
 
@@ -6,6 +7,20 @@ export const db = new Database(config.dbPath);
 
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
+
+function buildInviteCode() {
+  return `HG-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+}
+
+export function generateDoctorInviteCode() {
+  let inviteCode = buildInviteCode();
+
+  while (db.prepare("SELECT id FROM doctors WHERE invite_code = ?").get(inviteCode)) {
+    inviteCode = buildInviteCode();
+  }
+
+  return inviteCode;
+}
 
 export function initDb() {
   db.exec(`
@@ -15,6 +30,7 @@ export function initDb() {
       password TEXT NOT NULL,
       full_name TEXT NOT NULL,
       specialization TEXT,
+      invite_code TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -40,4 +56,28 @@ export function initDb() {
       FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE
     );
   `);
+
+  const doctorColumns = db.prepare("PRAGMA table_info(doctors)").all();
+  const hasInviteCode = doctorColumns.some((column) => column.name === "invite_code");
+
+  if (!hasInviteCode) {
+    db.exec("ALTER TABLE doctors ADD COLUMN invite_code TEXT");
+  }
+
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_doctors_invite_code ON doctors(invite_code)");
+
+  const doctorsMissingCode = db
+    .prepare("SELECT id FROM doctors WHERE invite_code IS NULL OR TRIM(invite_code) = ''")
+    .all();
+
+  if (doctorsMissingCode.length > 0) {
+    const updateInviteCode = db.prepare("UPDATE doctors SET invite_code = ? WHERE id = ?");
+    const transaction = db.transaction((rows) => {
+      rows.forEach((doctor) => {
+        updateInviteCode.run(generateDoctorInviteCode(), doctor.id);
+      });
+    });
+
+    transaction(doctorsMissingCode);
+  }
 }
