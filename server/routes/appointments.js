@@ -277,7 +277,7 @@ router.post("/", async (req, res, next) => {
       duration: normalizedDuration,
       status: normalizeScheduledStatus(),
       notes: String(notes || "").trim(),
-      created_by: req.doctor.fullName || req.doctor.username,
+      created_by: req.doctor.fullName || req.doctor.email,
       created_at: now,
       updated_at: now,
       read_at: null,

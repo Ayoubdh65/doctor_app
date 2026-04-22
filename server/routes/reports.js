@@ -43,7 +43,7 @@ You are a clinical documentation assistant.
 Generate a concise doctor-facing report in markdown.
 
 Doctor:
-- Name: ${doctor.fullName || doctor.username}
+- Name: ${doctor.fullName || doctor.email}
 - Specialization: ${doctor.specialization || "General"}
 
 Patient:

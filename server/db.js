@@ -26,7 +26,7 @@ export function initDb() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS doctors (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT NOT NULL UNIQUE,
+      email TEXT NOT NULL UNIQUE,
       password TEXT NOT NULL,
       full_name TEXT NOT NULL,
       specialization TEXT,
@@ -58,12 +58,29 @@ export function initDb() {
   `);
 
   const doctorColumns = db.prepare("PRAGMA table_info(doctors)").all();
+  const hasEmail = doctorColumns.some((column) => column.name === "email");
+  const hasUsername = doctorColumns.some((column) => column.name === "username");
   const hasInviteCode = doctorColumns.some((column) => column.name === "invite_code");
+
+  if (!hasEmail) {
+    db.exec("ALTER TABLE doctors ADD COLUMN email TEXT");
+  }
+
+  if (hasUsername) {
+    db.exec(`
+      UPDATE doctors
+      SET email = LOWER(TRIM(username))
+      WHERE (email IS NULL OR TRIM(email) = '')
+        AND username IS NOT NULL
+        AND TRIM(username) <> ''
+    `);
+  }
 
   if (!hasInviteCode) {
     db.exec("ALTER TABLE doctors ADD COLUMN invite_code TEXT");
   }
 
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_doctors_email ON doctors(email)");
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_doctors_invite_code ON doctors(invite_code)");
 
   const doctorsMissingCode = db

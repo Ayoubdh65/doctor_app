@@ -3,7 +3,7 @@ import { useState } from "react";
 export default function LoginPage({ onLogin, onRegister, error }) {
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({
-    username: "",
+    email: "",
     password: "",
     fullName: "",
     specialization: "",
@@ -33,7 +33,7 @@ export default function LoginPage({ onLogin, onRegister, error }) {
     try {
       if (mode === "login") {
         await onLogin({
-          username: form.username,
+          email: form.email,
           password: form.password,
         });
       } else {
@@ -86,12 +86,15 @@ export default function LoginPage({ onLogin, onRegister, error }) {
 
           <form className="grid gap-4" onSubmit={handleSubmit}>
             <label className="text-sm font-semibold text-slate-700">
-              Username
+              Email
               <input
                 className={inputClass}
-                name="username"
+                autoComplete="email"
+                name="email"
                 onChange={updateField}
-                value={form.username}
+                type="email"
+                value={form.email}
+                minLength={5}
                 required
               />
             </label>
@@ -100,12 +103,18 @@ export default function LoginPage({ onLogin, onRegister, error }) {
               Password
               <input
                 className={inputClass}
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
                 name="password"
                 onChange={updateField}
                 type="password"
                 value={form.password}
+                minLength={8}
+                maxLength={72}
                 required
               />
+              <span className="mt-1 block text-xs font-medium text-slate-500">
+                Password must be 8 to 72 characters.
+              </span>
             </label>
 
             {mode === "register" && (
@@ -117,6 +126,8 @@ export default function LoginPage({ onLogin, onRegister, error }) {
                     name="fullName"
                     onChange={updateField}
                     value={form.fullName}
+                    minLength={2}
+                    maxLength={80}
                     required
                   />
                 </label>
@@ -128,6 +139,7 @@ export default function LoginPage({ onLogin, onRegister, error }) {
                     name="specialization"
                     onChange={updateField}
                     value={form.specialization}
+                    maxLength={80}
                     placeholder="Cardiology, Internal Medicine, ..."
                   />
                 </label>

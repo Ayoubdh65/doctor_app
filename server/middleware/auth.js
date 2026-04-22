@@ -6,7 +6,7 @@ export function signDoctorToken(doctor) {
   return jwt.sign(
     {
       sub: String(doctor.id),
-      username: doctor.username,
+      email: doctor.email,
       fullName: doctor.full_name,
       specialization: doctor.specialization,
     },

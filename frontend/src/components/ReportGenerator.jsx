@@ -10,6 +10,14 @@ function getPatientName(patient) {
   return [patient?.first_name, patient?.last_name].filter(Boolean).join(" ") || patient?.name || "-";
 }
 
+function sanitizeFilenamePart(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 50);
+}
+
 export default function ReportGenerator({
   patients = [],
   selectedPatient,
@@ -78,6 +86,29 @@ export default function ReportGenerator({
   const activePatientId = selectedPatientId || getPatientId(selectedPatient) || "";
   const activePatient =
     patients.find((patient) => String(getPatientId(patient)) === String(activePatientId)) || selectedPatient;
+
+  const downloadReportFile = (targetReport) => {
+    if (!targetReport?.content) {
+      return;
+    }
+
+    const patientName = sanitizeFilenamePart(getPatientName(activePatient)) || "patient";
+    const reportId = sanitizeFilenamePart(targetReport.id) || "new";
+    const createdAt = targetReport.createdAt
+      ? new Date(targetReport.createdAt).toISOString().slice(0, 10)
+      : "latest";
+    const filename = `report-${patientName}-${reportId}-${createdAt}.md`;
+
+    const blob = new Blob([targetReport.content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <section className="rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-[0_20px_55px_-30px_rgba(15,23,42,0.45)] backdrop-blur-md">
@@ -155,7 +186,16 @@ export default function ReportGenerator({
                       >
                         Report #{item.id}
                       </button>
-                      <span className="text-xs text-slate-500 sm:text-sm">{new Date(item.createdAt).toLocaleString()}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500 sm:text-sm">{new Date(item.createdAt).toLocaleString()}</span>
+                        <button
+                          className="rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                          onClick={() => downloadReportFile(item)}
+                          type="button"
+                        >
+                          Download
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -163,7 +203,17 @@ export default function ReportGenerator({
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-              <h3 className="text-lg font-bold text-slate-900">Generated markdown</h3>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-lg font-bold text-slate-900">Generated markdown</h3>
+                <button
+                  className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={!report?.content}
+                  onClick={() => downloadReportFile(report)}
+                  type="button"
+                >
+                  Download .md
+                </button>
+              </div>
               {report ? (
                 <pre className="mt-3 max-h-[560px] overflow-auto rounded-2xl border border-slate-700 bg-slate-900 p-4 text-sm leading-relaxed text-slate-100 shadow-inner">
                   {report.content}

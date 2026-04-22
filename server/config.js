@@ -18,6 +18,7 @@ export const config = {
   supabaseUrl: trimTrailingSlash(process.env.SUPABASE_URL || ""),
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
   supabasePatientsTable: process.env.SUPABASE_PATIENTS_TABLE || "patients",
+  supabaseDoctorsTable: process.env.SUPABASE_DOCTORS_TABLE || "doctors",
   supabaseVitalsTable: process.env.SUPABASE_VITALS_TABLE || "vital_readings",
   supabaseAlertsTable: process.env.SUPABASE_ALERTS_TABLE || "alerts",
   supabaseAppointmentsTable: process.env.SUPABASE_APPOINTMENTS_TABLE || "appointments",
