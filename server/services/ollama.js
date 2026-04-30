@@ -10,6 +10,10 @@ export async function generateMedicalReport(prompt) {
       model: config.ollamaModel,
       prompt,
       stream: false,
+      options: {
+        temperature: 0.15,
+        top_p: 0.8,
+      },
     }),
   });
 

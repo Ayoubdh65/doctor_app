@@ -40,8 +40,13 @@ app.use("/api/appointments", appointmentsRoutes);
 app.use("/api/reports", reportsRoutes);
 
 app.use((error, _req, res, _next) => {
-  console.error(error);
-  res.status(500).json({
+  const status = error.status || 500;
+
+  if (status >= 500) {
+    console.error(error.message || error);
+  }
+
+  res.status(status).json({
     error: error.message || "Unexpected server error",
   });
 });

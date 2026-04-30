@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { api, clearSession, getStoredDoctor, getStoredToken, setSession } from "../api.js";
+
+const AUTO_REFRESH_INTERVAL_MS = 30000;
+const CHART_HISTORY_LIMIT = 80;
 
 function getPatientId(patient) {
   return patient?.id ?? patient?.uuid;
@@ -53,10 +56,19 @@ export function useDoctorData() {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [sessionReady, setSessionReady] = useState(!getStoredDoctor());
   const [error, setError] = useState("");
+  const loadingPatientsRef = useRef(false);
+  const loadingDetailsRef = useRef(false);
 
-  const loadPatients = async () => {
-    setLoadingPatients(true);
-    setError("");
+  const loadPatients = async ({ silent = false } = {}) => {
+    if (loadingPatientsRef.current) {
+      return;
+    }
+
+    loadingPatientsRef.current = true;
+    if (!silent) {
+      setLoadingPatients(true);
+      setError("");
+    }
 
     try {
       const rawPatients = normalizeCollection(await api.getPatients());
@@ -67,25 +79,37 @@ export function useDoctorData() {
         setSelectedPatientId(String(getPatientId(enrichedPatients[0])));
       }
     } catch (loadError) {
-      setError(loadError.message);
+      if (!silent) {
+        setError(loadError.message);
+      }
     } finally {
-      setLoadingPatients(false);
+      loadingPatientsRef.current = false;
+      if (!silent) {
+        setLoadingPatients(false);
+      }
     }
   };
 
-  const loadPatientDetails = async (patientId) => {
+  const loadPatientDetails = async (patientId, { silent = false } = {}) => {
     if (!patientId) {
       return;
     }
 
-    setLoadingDetails(true);
-    setError("");
+    if (loadingDetailsRef.current) {
+      return;
+    }
+
+    loadingDetailsRef.current = true;
+    if (!silent) {
+      setLoadingDetails(true);
+      setError("");
+    }
 
     try {
       const [patient, latest, history, stats, patientAlerts, statsAlerts] = await Promise.all([
         api.getPatient(patientId),
         api.getLatestVitals(patientId),
-        api.getVitalsHistory(patientId, "24h"),
+        api.getVitalsHistory(patientId, "24h", CHART_HISTORY_LIMIT),
         api.getVitalsStats(patientId, 24),
         api.getAlerts(patientId),
         api.getAlertStats(patientId),
@@ -98,9 +122,14 @@ export function useDoctorData() {
       setAlerts(normalizeCollection(patientAlerts));
       setAlertStats(statsAlerts);
     } catch (loadError) {
-      setError(loadError.message);
+      if (!silent) {
+        setError(loadError.message);
+      }
     } finally {
-      setLoadingDetails(false);
+      loadingDetailsRef.current = false;
+      if (!silent) {
+        setLoadingDetails(false);
+      }
     }
   };
 
@@ -117,6 +146,15 @@ export function useDoctorData() {
     setDoctor(result.doctor);
     return result.doctor;
   };
+
+  const updateProfile = async (payload) => {
+    const result = await api.updateProfile(payload);
+    setSession(result.token, result.doctor);
+    setDoctor(result.doctor);
+    return result.doctor;
+  };
+
+  const updatePassword = async (payload) => api.updatePassword(payload);
 
   const logout = () => {
     clearSession();
@@ -138,9 +176,41 @@ export function useDoctorData() {
   }, [doctor, sessionReady]);
 
   useEffect(() => {
+    if (!doctor || !sessionReady) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      if (document.hidden) {
+        return;
+      }
+
+      loadPatients({ silent: true });
+    }, AUTO_REFRESH_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [doctor, sessionReady, selectedPatientId]);
+
+  useEffect(() => {
     if (doctor && sessionReady && selectedPatientId) {
       loadPatientDetails(selectedPatientId);
     }
+  }, [doctor, sessionReady, selectedPatientId]);
+
+  useEffect(() => {
+    if (!doctor || !sessionReady || !selectedPatientId) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      if (document.hidden) {
+        return;
+      }
+
+      loadPatientDetails(selectedPatientId, { silent: true });
+    }, AUTO_REFRESH_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
   }, [doctor, sessionReady, selectedPatientId]);
 
   useEffect(() => {
@@ -198,6 +268,8 @@ export function useDoctorData() {
     error,
     login,
     register,
+    updateProfile,
+    updatePassword,
     logout,
     selectPatient: (patientId) => setSelectedPatientId(String(patientId)),
     refreshPatients: loadPatients,

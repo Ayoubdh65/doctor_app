@@ -69,7 +69,7 @@ router.get("/:id/vitals/history", async (req, res, next) => {
       return res.status(404).json({ error: "Patient not found for this doctor" });
     }
 
-    const history = await getVitalsHistory(req.params.id, req.query.period || "24h");
+    const history = await getVitalsHistory(req.params.id, req.query.period || "24h", req.query.limit);
     res.json(history);
   } catch (error) {
     next(error);

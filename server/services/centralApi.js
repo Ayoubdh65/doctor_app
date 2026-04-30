@@ -21,13 +21,26 @@ function buildSupabaseUrl(table, params = {}) {
 }
 
 async function requestSupabase(table, params = {}) {
-  const response = await fetch(buildSupabaseUrl(table, params), {
-    headers: supabaseHeaders(),
-  });
+  let response;
+
+  try {
+    response = await fetch(buildSupabaseUrl(table, params), {
+      headers: supabaseHeaders(),
+    });
+  } catch (error) {
+    const upstreamError = new Error(
+      "Supabase is unreachable right now. Please check your connection and Supabase project availability."
+    );
+    upstreamError.status = 503;
+    upstreamError.cause = error;
+    throw upstreamError;
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Supabase ${response.status}: ${errorText || response.statusText}`);
+    const upstreamError = new Error(`Supabase ${response.status}: ${errorText || response.statusText}`);
+    upstreamError.status = response.status >= 500 ? 502 : response.status;
+    throw upstreamError;
   }
 
   return response.json();
@@ -180,8 +193,9 @@ export async function getLatestVitals(patientId) {
   return rows.length > 0 ? mapVitalReading(rows[0]) : null;
 }
 
-export async function getVitalsHistory(patientId, period) {
-  const rows = await getRecentVitalReadings(patientId, periodToDate(period), 500);
+export async function getVitalsHistory(patientId, period, limit = 500) {
+  const safeLimit = Math.min(Math.max(Number(limit) || 80, 10), 500);
+  const rows = await getRecentVitalReadings(patientId, periodToDate(period), safeLimit);
   const points = [...rows].reverse();
 
   return {

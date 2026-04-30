@@ -42,6 +42,8 @@ const VITAL_STATS_CONFIG = [
   { key: "respiratory_rate_avg", label: "Average respiratory rate", suffix: " rpm" },
 ];
 
+const MAX_CHART_POINTS = 80;
+
 function Sparkline({ vitalKey, label, points, color }) {
   const numericPoints = points
     .map((point) => Number(point))
@@ -121,7 +123,7 @@ export default function PatientDetail({
   alertStats,
   loading,
 }) {
-  const historyItems = Array.isArray(vitalsHistory) ? vitalsHistory : [];
+  const historyItems = (Array.isArray(vitalsHistory) ? vitalsHistory : []).slice(-MAX_CHART_POINTS);
   const detailRowClass = "flex items-center justify-between gap-3 border-b border-slate-200 py-2 text-sm";
   const statsSource = vitalsStats || {};
 

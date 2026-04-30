@@ -5,6 +5,7 @@ export default function LoginPage({ onLogin, onRegister, error }) {
   const [form, setForm] = useState({
     email: "",
     password: "",
+    confirmPassword: "",
     fullName: "",
     specialization: "",
   });
@@ -37,6 +38,11 @@ export default function LoginPage({ onLogin, onRegister, error }) {
           password: form.password,
         });
       } else {
+        if (form.password !== form.confirmPassword) {
+          setLocalError("Passwords do not match");
+          return;
+        }
+
         await onRegister(form);
       }
     } catch (submitError) {
@@ -119,6 +125,21 @@ export default function LoginPage({ onLogin, onRegister, error }) {
 
             {mode === "register" && (
               <>
+                <label className="text-sm font-semibold text-slate-700">
+                  Confirm password
+                  <input
+                    className={inputClass}
+                    autoComplete="new-password"
+                    name="confirmPassword"
+                    onChange={updateField}
+                    type="password"
+                    value={form.confirmPassword}
+                    minLength={8}
+                    maxLength={72}
+                    required
+                  />
+                </label>
+
                 <label className="text-sm font-semibold text-slate-700">
                   Full name
                   <input

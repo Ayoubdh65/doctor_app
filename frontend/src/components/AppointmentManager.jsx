@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "../api.js";
+
+const AUTO_REFRESH_INTERVAL_MS = 30000;
 
 function toInputDateTime(value) {
   if (!value) {
@@ -61,6 +63,7 @@ export default function AppointmentManager({ patients, selectedPatient }) {
     duration: 30,
     notes: "",
   });
+  const loadingAppointmentsRef = useRef(false);
   const minimumAppointmentDateTime = getMinimumAppointmentDateTime();
   const scheduleFieldError = getScheduleFieldError(error);
   const inputClass =
@@ -86,7 +89,12 @@ export default function AppointmentManager({ patients, selectedPatient }) {
     [patientOptions]
   );
 
-  const loadAppointments = async () => {
+  const loadAppointments = async ({ silent = false } = {}) => {
+    if (loadingAppointmentsRef.current) {
+      return;
+    }
+
+    loadingAppointmentsRef.current = true;
     try {
       const [allAppointments, upcomingAppointments] = await Promise.all([
         api.getAppointments(),
@@ -95,12 +103,26 @@ export default function AppointmentManager({ patients, selectedPatient }) {
       setAppointments(allAppointments);
       setUpcoming(upcomingAppointments);
     } catch (loadError) {
-      setError(loadError.message);
+      if (!silent) {
+        setError(loadError.message);
+      }
+    } finally {
+      loadingAppointmentsRef.current = false;
     }
   };
 
   useEffect(() => {
     loadAppointments();
+
+    const intervalId = window.setInterval(() => {
+      if (document.hidden) {
+        return;
+      }
+
+      loadAppointments({ silent: true });
+    }, AUTO_REFRESH_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
   }, []);
 
   useEffect(() => {

@@ -31,6 +31,9 @@ export default function ReportGenerator({
   const [error, setError] = useState("");
   const selectClass =
     "rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm transition focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200";
+  const activePatientId = selectedPatientId || getPatientId(selectedPatient) || "";
+  const activePatient =
+    patients.find((patient) => String(getPatientId(patient)) === String(activePatientId)) || selectedPatient;
 
   const loadReports = async (patientId) => {
     try {
@@ -42,17 +45,16 @@ export default function ReportGenerator({
   };
 
   useEffect(() => {
-    const patientId = selectedPatientId || getPatientId(selectedPatient);
     setReport(null);
-    if (patientId) {
-      loadReports(patientId);
+    if (activePatientId) {
+      loadReports(activePatientId);
     } else {
       setReports([]);
     }
-  }, [selectedPatient, selectedPatientId]);
+  }, [activePatientId]);
 
   const generateReport = async () => {
-    const patientId = selectedPatientId || getPatientId(selectedPatient);
+    const patientId = activePatientId;
     if (!patientId) {
       return;
     }
@@ -82,10 +84,6 @@ export default function ReportGenerator({
       setError(loadError.message);
     }
   };
-
-  const activePatientId = selectedPatientId || getPatientId(selectedPatient) || "";
-  const activePatient =
-    patients.find((patient) => String(getPatientId(patient)) === String(activePatientId)) || selectedPatient;
 
   const downloadReportFile = (targetReport) => {
     if (!targetReport?.content) {

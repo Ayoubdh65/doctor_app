@@ -67,6 +67,18 @@ export const api = {
   me() {
     return request("/auth/me");
   },
+  updateProfile(payload) {
+    return request("/auth/me", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+  updatePassword(payload) {
+    return request("/auth/me/password", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
   getPatients() {
     return request("/patients");
   },
@@ -76,8 +88,12 @@ export const api = {
   getLatestVitals(id) {
     return request(`/patients/${id}/vitals/latest`);
   },
-  getVitalsHistory(id, period = "24h") {
-    return request(`/patients/${id}/vitals/history?period=${encodeURIComponent(period)}`);
+  getVitalsHistory(id, period = "24h", limit = 80) {
+    const search = new URLSearchParams({
+      period,
+      limit: String(limit),
+    });
+    return request(`/patients/${id}/vitals/history?${search.toString()}`);
   },
   getVitalsStats(id, hours = 24) {
     return request(`/patients/${id}/vitals/stats?hours=${hours}`);

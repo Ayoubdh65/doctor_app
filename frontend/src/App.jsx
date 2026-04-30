@@ -1,20 +1,32 @@
-import { useState } from "react";
+import { lazy, Suspense } from "react";
+import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 
-import AppointmentManager from "./components/AppointmentManager.jsx";
 import LoginPage from "./components/LoginPage.jsx";
-import PatientDetail from "./components/PatientDetail.jsx";
-import PatientList from "./components/PatientList.jsx";
-import ReportGenerator from "./components/ReportGenerator.jsx";
 import { useDoctorData } from "./hooks/useDoctorData.js";
 
+const AppointmentManager = lazy(() => import("./components/AppointmentManager.jsx"));
+const PatientDetail = lazy(() => import("./components/PatientDetail.jsx"));
+const PatientList = lazy(() => import("./components/PatientList.jsx"));
+const ProfileSettings = lazy(() => import("./components/ProfileSettings.jsx"));
+const ReportGenerator = lazy(() => import("./components/ReportGenerator.jsx"));
+
+function LoadingPanel({ label = "Loading..." }) {
+  return (
+    <section className="rounded-3xl border border-slate-200/80 bg-white/90 p-5 text-sm font-medium text-slate-500 shadow-[0_20px_55px_-30px_rgba(15,23,42,0.45)] backdrop-blur-md">
+      {label}
+    </section>
+  );
+}
+
 export default function App() {
-  const [view, setView] = useState("patients");
   const doctorData = useDoctorData();
   const tabBaseClass =
     "rounded-xl border px-4 py-2 text-sm font-semibold tracking-wide transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2";
   const activeTabClass = "border-sky-600 bg-sky-600 text-white shadow-md shadow-sky-500/30";
   const inactiveTabClass =
     "border-slate-300 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700";
+  const tabClass = ({ isActive }) =>
+    `${tabBaseClass} ${isActive ? activeTabClass : inactiveTabClass}`;
 
   if (!doctorData.sessionReady) {
     return (
@@ -58,27 +70,18 @@ export default function App() {
 
         <div className="flex flex-wrap items-center gap-3">
           <nav className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-slate-100/70 p-2">
-            <button
-              className={`${tabBaseClass} ${view === "patients" ? activeTabClass : inactiveTabClass}`}
-              onClick={() => setView("patients")}
-              type="button"
-            >
+            <NavLink className={tabClass} to="/patients">
               Patients
-            </button>
-            <button
-              className={`${tabBaseClass} ${view === "appointments" ? activeTabClass : inactiveTabClass}`}
-              onClick={() => setView("appointments")}
-              type="button"
-            >
+            </NavLink>
+            <NavLink className={tabClass} to="/appointments">
               Appointments
-            </button>
-            <button
-              className={`${tabBaseClass} ${view === "reports" ? activeTabClass : inactiveTabClass}`}
-              onClick={() => setView("reports")}
-              type="button"
-            >
+            </NavLink>
+            <NavLink className={tabClass} to="/reports">
               Reports
-            </button>
+            </NavLink>
+            <NavLink className={tabClass} to="/profile">
+              Profile
+            </NavLink>
           </nav>
 
           <button
@@ -97,45 +100,68 @@ export default function App() {
         </p>
       )}
 
-      {view === "patients" && (
-        <div className="mx-auto grid w-full max-w-[1400px] grid-cols-1 gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
-          <PatientList
-            loading={doctorData.loadingPatients}
-            onSelect={doctorData.selectPatient}
-            patients={doctorData.patients}
-            selectedPatientId={doctorData.selectedPatientId}
+      <Suspense fallback={<div className="mx-auto w-full max-w-[1400px]"><LoadingPanel /></div>}>
+        <Routes>
+          <Route path="/" element={<Navigate to="/patients" replace />} />
+          <Route
+            path="/patients"
+            element={
+              <div className="mx-auto grid w-full max-w-[1400px] grid-cols-1 gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+                <PatientList
+                  loading={doctorData.loadingPatients}
+                  onSelect={doctorData.selectPatient}
+                  patients={doctorData.patients}
+                  selectedPatientId={doctorData.selectedPatientId}
+                />
+                <PatientDetail
+                  alertStats={doctorData.alertStats}
+                  alerts={doctorData.alerts}
+                  latestVitals={doctorData.latestVitals}
+                  loading={doctorData.loadingDetails}
+                  patient={doctorData.selectedPatient}
+                  vitalsHistory={doctorData.vitalsHistory}
+                  vitalsStats={doctorData.vitalsStats}
+                />
+              </div>
+            }
           />
-          <PatientDetail
-            alertStats={doctorData.alertStats}
-            alerts={doctorData.alerts}
-            latestVitals={doctorData.latestVitals}
-            loading={doctorData.loadingDetails}
-            patient={doctorData.selectedPatient}
-            vitalsHistory={doctorData.vitalsHistory}
-            vitalsStats={doctorData.vitalsStats}
+          <Route
+            path="/appointments"
+            element={
+              <div className="mx-auto w-full max-w-[1400px]">
+                <AppointmentManager
+                  patients={doctorData.patients}
+                  selectedPatient={doctorData.selectedPatient}
+                />
+              </div>
+            }
           />
-        </div>
-      )}
-
-      {view === "appointments" && (
-        <div className="mx-auto w-full max-w-[1400px]">
-          <AppointmentManager
-            patients={doctorData.patients}
-            selectedPatient={doctorData.selectedPatient}
+          <Route
+            path="/reports"
+            element={
+              <div className="mx-auto w-full max-w-[1400px]">
+                <ReportGenerator
+                  patients={doctorData.patients}
+                  selectedPatient={doctorData.selectedPatient}
+                  selectedPatientId={doctorData.selectedPatientId}
+                  onSelectPatient={doctorData.selectPatient}
+                />
+              </div>
+            }
           />
-        </div>
-      )}
-
-      {view === "reports" && (
-        <div className="mx-auto w-full max-w-[1400px]">
-          <ReportGenerator
-            patients={doctorData.patients}
-            selectedPatient={doctorData.selectedPatient}
-            selectedPatientId={doctorData.selectedPatientId}
-            onSelectPatient={doctorData.selectPatient}
+          <Route
+            path="/profile"
+            element={
+              <ProfileSettings
+                doctor={doctorData.doctor}
+                onUpdatePassword={doctorData.updatePassword}
+                onUpdateProfile={doctorData.updateProfile}
+              />
+            }
           />
-        </div>
-      )}
+          <Route path="*" element={<Navigate to="/patients" replace />} />
+        </Routes>
+      </Suspense>
     </div>
   );
 }
