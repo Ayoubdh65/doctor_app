@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage({ onLogin, onRegister, error }) {
   const [mode, setMode] = useState("login");
@@ -11,6 +12,7 @@ export default function LoginPage({ onLogin, onRegister, error }) {
   });
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState({ password: false, confirmPassword: false });
   const tabBaseClass =
     "rounded-xl border px-4 py-2 text-sm font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2";
   const activeTabClass = "border-sky-600 bg-sky-600 text-white shadow-md shadow-sky-500/25";
@@ -60,10 +62,7 @@ export default function LoginPage({ onLogin, onRegister, error }) {
           <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
             HealthGuard Doctor Interface
           </h1>
-          <p className="text-sm leading-relaxed text-slate-600 sm:text-base">
-            This application authenticates doctors locally, while patient vitals and history are
-            pulled from your HealthGuard Supabase database through the doctor backend.
-          </p>
+          
           {mode === "register" && (
             <p className="rounded-2xl border border-cyan-200 bg-cyan-50/80 px-4 py-3 text-sm leading-relaxed text-cyan-800">
               A shareable doctor code is generated when the account is created. Share that code
@@ -107,17 +106,27 @@ export default function LoginPage({ onLogin, onRegister, error }) {
 
             <label className="text-sm font-semibold text-slate-700">
               Password
-              <input
-                className={inputClass}
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
-                name="password"
-                onChange={updateField}
-                type="password"
-                value={form.password}
-                minLength={8}
-                maxLength={72}
-                required
-              />
+              <div className="relative mt-2">
+                <input
+                  className={`${inputClass} pr-12`}
+                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  name="password"
+                  onChange={updateField}
+                  type={passwordVisible.password ? "text" : "password"}
+                  value={form.password}
+                  minLength={8}
+                  maxLength={72}
+                  required
+                />
+                <button
+                  aria-label={passwordVisible.password ? "Hide password" : "Show password"}
+                  className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-slate-500 transition hover:text-slate-800"
+                  onClick={() => setPasswordVisible((c) => ({ ...c, password: !c.password }))}
+                  type="button"
+                >
+                  {passwordVisible.password ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
               <span className="mt-1 block text-xs font-medium text-slate-500">
                 Password must be 8 to 72 characters.
               </span>
@@ -127,17 +136,27 @@ export default function LoginPage({ onLogin, onRegister, error }) {
               <>
                 <label className="text-sm font-semibold text-slate-700">
                   Confirm password
-                  <input
-                    className={inputClass}
-                    autoComplete="new-password"
-                    name="confirmPassword"
-                    onChange={updateField}
-                    type="password"
-                    value={form.confirmPassword}
-                    minLength={8}
-                    maxLength={72}
-                    required
-                  />
+                  <div className="relative mt-2">
+                    <input
+                      className={`${inputClass} pr-12`}
+                      autoComplete="new-password"
+                      name="confirmPassword"
+                      onChange={updateField}
+                      type={passwordVisible.confirmPassword ? "text" : "password"}
+                      value={form.confirmPassword}
+                      minLength={8}
+                      maxLength={72}
+                      required
+                    />
+                    <button
+                      aria-label={passwordVisible.confirmPassword ? "Hide confirm password" : "Show confirm password"}
+                      className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-slate-500 transition hover:text-slate-800"
+                      onClick={() => setPasswordVisible((c) => ({ ...c, confirmPassword: !c.confirmPassword }))}
+                      type="button"
+                    >
+                      {passwordVisible.confirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </label>
 
                 <label className="text-sm font-semibold text-slate-700">

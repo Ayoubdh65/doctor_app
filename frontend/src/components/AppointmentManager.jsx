@@ -2,8 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "../api.js";
 
-const AUTO_REFRESH_INTERVAL_MS = 30000;
-
 function toInputDateTime(value) {
   if (!value) {
     return "";
@@ -51,7 +49,6 @@ function getScheduleFieldError(message) {
 
 export default function AppointmentManager({ patients, selectedPatient }) {
   const [appointments, setAppointments] = useState([]);
-  const [upcoming, setUpcoming] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -96,12 +93,8 @@ export default function AppointmentManager({ patients, selectedPatient }) {
 
     loadingAppointmentsRef.current = true;
     try {
-      const [allAppointments, upcomingAppointments] = await Promise.all([
-        api.getAppointments(),
-        api.getUpcomingAppointments(),
-      ]);
+      const allAppointments = await api.getAppointments();
       setAppointments(allAppointments);
-      setUpcoming(upcomingAppointments);
     } catch (loadError) {
       if (!silent) {
         setError(loadError.message);
@@ -113,16 +106,6 @@ export default function AppointmentManager({ patients, selectedPatient }) {
 
   useEffect(() => {
     loadAppointments();
-
-    const intervalId = window.setInterval(() => {
-      if (document.hidden) {
-        return;
-      }
-
-      loadAppointments({ silent: true });
-    }, AUTO_REFRESH_INTERVAL_MS);
-
-    return () => window.clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -214,7 +197,7 @@ export default function AppointmentManager({ patients, selectedPatient }) {
         </span>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-[420px_minmax(0,1fr)] xl:items-start">
         <form className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4" onSubmit={handleSubmit}>
           <h3 className="text-lg font-bold text-slate-900">{editingId ? "Edit appointment" : "Create appointment"}</h3>
 
@@ -324,73 +307,53 @@ export default function AppointmentManager({ patients, selectedPatient }) {
         </form>
 
         <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-          <h3 className="text-lg font-bold text-slate-900">Upcoming appointments</h3>
-          {upcoming.length === 0 ? (
-            <p className="mt-2 text-sm text-slate-500">No upcoming appointments.</p>
+          <h3 className="text-lg font-bold text-slate-900">All appointments</h3>
+          {appointments.length === 0 ? (
+            <p className="mt-2 text-sm text-slate-500">No appointments created yet.</p>
           ) : (
-            <ul className="mt-3 grid gap-2">
-              {upcoming.map((appointment) => (
-                <li key={appointment.id} className="grid gap-1 rounded-xl border border-slate-200 bg-white p-3 text-sm">
-                  <strong className="text-slate-900">
-                    {patientLabelById[appointment.patientId] || `Patient ${appointment.patientId}`}
-                  </strong>
-                  <span className="text-slate-700">{appointment.title}</span>
-                  <span className="text-slate-600">{new Date(appointment.scheduledAt).toLocaleString()}</span>
-                  <span className="font-medium text-slate-700">{appointment.duration} minutes</span>
-                </li>
-              ))}
-            </ul>
+            <div className="mt-3 max-h-[760px] overflow-auto rounded-xl border border-slate-200 bg-white">
+              <table className="w-full min-w-[760px] border-collapse text-sm">
+                <thead className="sticky top-0 bg-slate-100 text-slate-700">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-semibold">Patient</th>
+                    <th className="px-3 py-2 text-left font-semibold">Title</th>
+                    <th className="px-3 py-2 text-left font-semibold">Scheduled</th>
+                    <th className="px-3 py-2 text-left font-semibold">Duration</th>
+                    <th className="px-3 py-2 text-left font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {appointments.map((appointment) => (
+                    <tr key={appointment.id} className="border-t border-slate-100 text-slate-700">
+                      <td className="px-3 py-2 align-top">{patientLabelById[appointment.patientId] || appointment.patientId}</td>
+                      <td className="px-3 py-2 align-top">{appointment.title}</td>
+                      <td className="px-3 py-2 align-top">{new Date(appointment.scheduledAt).toLocaleString()}</td>
+                      <td className="px-3 py-2 align-top">{appointment.duration} min</td>
+                      <td className="px-3 py-2 align-top">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            className={`${actionButtonClass} border-slate-300 bg-white text-slate-700 hover:bg-slate-100 focus-visible:ring-slate-300`}
+                            onClick={() => handleEdit(appointment)}
+                            type="button"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className={`${actionButtonClass} border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 focus-visible:ring-rose-300`}
+                            onClick={() => handleCancelAppointment(appointment.id)}
+                            type="button"
+                          >
+                            Cancel Appointment
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
-      </div>
-
-      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-        <h3 className="text-lg font-bold text-slate-900">All appointments</h3>
-        {appointments.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-500">No appointments created yet.</p>
-        ) : (
-          <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full border-collapse text-sm">
-              <thead className="bg-slate-100 text-slate-700">
-                <tr>
-                  <th className="px-3 py-2 text-left font-semibold">Patient</th>
-                  <th className="px-3 py-2 text-left font-semibold">Title</th>
-                  <th className="px-3 py-2 text-left font-semibold">Scheduled</th>
-                  <th className="px-3 py-2 text-left font-semibold">Duration</th>
-                  <th className="px-3 py-2 text-left font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {appointments.map((appointment) => (
-                  <tr key={appointment.id} className="border-t border-slate-100 text-slate-700">
-                    <td className="px-3 py-2 align-top">{patientLabelById[appointment.patientId] || appointment.patientId}</td>
-                    <td className="px-3 py-2 align-top">{appointment.title}</td>
-                    <td className="px-3 py-2 align-top">{new Date(appointment.scheduledAt).toLocaleString()}</td>
-                    <td className="px-3 py-2 align-top">{appointment.duration} min</td>
-                    <td className="px-3 py-2 align-top">
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          className={`${actionButtonClass} border-slate-300 bg-white text-slate-700 hover:bg-slate-100 focus-visible:ring-slate-300`}
-                          onClick={() => handleEdit(appointment)}
-                          type="button"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className={`${actionButtonClass} border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 focus-visible:ring-rose-300`}
-                          onClick={() => handleCancelAppointment(appointment.id)}
-                          type="button"
-                        >
-                          Cancel Appointment
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
     </section>
   );
