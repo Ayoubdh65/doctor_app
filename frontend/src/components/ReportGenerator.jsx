@@ -18,6 +18,168 @@ function sanitizeFilenamePart(value) {
     .slice(0, 50);
 }
 
+function buildPdfFilename(report, patient) {
+  const patientName = sanitizeFilenamePart(getPatientName(patient)) || "patient";
+  const reportId = sanitizeFilenamePart(report?.id) || "new";
+  const createdAt = report?.createdAt
+    ? new Date(report.createdAt).toISOString().slice(0, 10)
+    : "latest";
+
+  return `report-${patientName}-${reportId}-${createdAt}.pdf`;
+}
+
+function parseReportContent(content) {
+  return content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      if (line.startsWith("## ")) {
+        return {
+          type: "heading",
+          text: line.replace(/^##\s*/, ""),
+        };
+      }
+
+      if (line.startsWith("- ")) {
+        return {
+          type: "bullet",
+          text: line.replace(/^-+\s*/, ""),
+        };
+      }
+
+      return {
+        type: "paragraph",
+        text: line,
+      };
+    });
+}
+
+async function exportReportPdf(targetReport, patient) {
+  if (!targetReport?.content) {
+    return;
+  }
+
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({
+    unit: "mm",
+    format: "a4",
+  });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const left = 18;
+  const right = 18;
+  const top = 18;
+  const bottom = 18;
+  const maxWidth = pageWidth - left - right;
+  const blocks = parseReportContent(targetReport.content);
+  let cursorY = top;
+  let pageNumber = 1;
+
+  const drawPageChrome = () => {
+    doc.setDrawColor(226, 232, 240);
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(left, 10, maxWidth, 10, 3, 3, "FD");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(8, 47, 73);
+    doc.text("HealthGuard Doctor Report", left + 4, 16.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Page ${pageNumber}`, pageWidth - right - 10, pageHeight - 8, { align: "right" });
+    doc.setTextColor(15, 23, 42);
+  };
+
+  const ensureSpace = (heightNeeded) => {
+    if (cursorY + heightNeeded <= pageHeight - bottom) {
+      return;
+    }
+
+    doc.addPage();
+    pageNumber += 1;
+    drawPageChrome();
+    cursorY = top;
+  };
+
+  drawPageChrome();
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.setTextColor(15, 23, 42);
+  doc.text("Remote Monitoring Report", left, cursorY + 6);
+  cursorY += 14;
+
+  doc.setFillColor(240, 249, 255);
+  doc.setDrawColor(186, 230, 253);
+  doc.roundedRect(left, cursorY, maxWidth, 24, 4, 4, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(12, 74, 110);
+  doc.text(`Patient`, left + 4, cursorY + 7);
+  doc.text(`Generated`, left + 4, cursorY + 14);
+  doc.text(`Report ID`, left + 4, cursorY + 21);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(15, 23, 42);
+  doc.text(getPatientName(patient), left + 28, cursorY + 7);
+  doc.text(
+    targetReport.createdAt ? new Date(targetReport.createdAt).toLocaleString() : "Latest",
+    left + 28,
+    cursorY + 14
+  );
+  doc.text(String(targetReport.id || "New"), left + 28, cursorY + 21);
+  cursorY += 32;
+
+  blocks.forEach((block) => {
+    if (block.type === "heading") {
+      ensureSpace(14);
+      doc.setFillColor(241, 245, 249);
+      doc.roundedRect(left, cursorY, maxWidth, 10, 3, 3, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(15, 23, 42);
+      doc.text(block.text, left + 4, cursorY + 6.8);
+      cursorY += 14;
+      return;
+    }
+
+    if (block.type === "bullet") {
+      const wrapped = doc.splitTextToSize(block.text, maxWidth - 8);
+      const blockHeight = wrapped.length * 5 + 2;
+      ensureSpace(blockHeight);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10.5);
+      doc.setTextColor(30, 41, 59);
+      doc.circle(left + 2, cursorY + 1.8, 0.8, "F");
+      doc.text(wrapped, left + 6, cursorY + 3);
+      cursorY += wrapped.length * 5 + 3;
+      return;
+    }
+
+    const wrapped = doc.splitTextToSize(block.text, maxWidth);
+    const blockHeight = wrapped.length * 5 + 2;
+    ensureSpace(blockHeight);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10.5);
+    doc.setTextColor(51, 65, 85);
+    doc.text(wrapped, left, cursorY + 3);
+    cursorY += wrapped.length * 5 + 3;
+  });
+
+  if (cursorY > pageHeight - bottom - 8) {
+      doc.addPage();
+      pageNumber += 1;
+      drawPageChrome();
+      cursorY = top;
+    }
+
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text("Generated from remote monitoring data for clinician review.", left, pageHeight - 8);
+
+  doc.save(buildPdfFilename(targetReport, patient));
+}
+
 export default function ReportGenerator({
   patients = [],
   selectedPatient,
@@ -83,29 +245,6 @@ export default function ReportGenerator({
     } catch (loadError) {
       setError(loadError.message);
     }
-  };
-
-  const downloadReportFile = (targetReport) => {
-    if (!targetReport?.content) {
-      return;
-    }
-
-    const patientName = sanitizeFilenamePart(getPatientName(activePatient)) || "patient";
-    const reportId = sanitizeFilenamePart(targetReport.id) || "new";
-    const createdAt = targetReport.createdAt
-      ? new Date(targetReport.createdAt).toISOString().slice(0, 10)
-      : "latest";
-    const filename = `report-${patientName}-${reportId}-${createdAt}.md`;
-
-    const blob = new Blob([targetReport.content], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
   };
 
   return (
@@ -188,10 +327,10 @@ export default function ReportGenerator({
                         <span className="text-xs text-slate-500 sm:text-sm">{new Date(item.createdAt).toLocaleString()}</span>
                         <button
                           className="rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
-                          onClick={() => downloadReportFile(item)}
+                          onClick={() => exportReportPdf(item, activePatient)}
                           type="button"
                         >
-                          Download
+                          PDF
                         </button>
                       </div>
                     </li>
@@ -206,10 +345,10 @@ export default function ReportGenerator({
                 <button
                   className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={!report?.content}
-                  onClick={() => downloadReportFile(report)}
+                  onClick={() => exportReportPdf(report, activePatient)}
                   type="button"
                 >
-                  Download .md
+                  Download PDF
                 </button>
               </div>
               {report ? (

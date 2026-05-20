@@ -18,12 +18,12 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
+    "jspdf": "^4.2.1",
+    "lucide-react": "^0.269.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.3",
     "recharts": "^3.8.1"
-    ,
-    "lucide-react": "^0.269.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",

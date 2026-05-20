@@ -2,3 +2,5 @@ node_modules/
 frontend/dist/
 doctor-interface.db
 .env
+docs/
+tools/

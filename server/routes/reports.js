@@ -125,9 +125,18 @@ Hard rules:
 - Do not mention hospital admission, clinic visit, symptoms, treatment, physical exam, device uptime, routine checks, equipment maintenance, or equipment adjustments.
 - Do not diagnose the patient.
 - Do not say anything is certain. Use cautious wording like "available readings", "may warrant review", and "based on the provided monitoring data".
-- If a section has no useful data, write "No clear conclusion from the provided data."
+- When numeric data is available, interpret it in plain language instead of repeating raw values only.
+- Use the vitals ranges and alert counts to say what appears stable, what fluctuates, and what may need attention.
+- Mention "No clear conclusion from the provided data." only when the section truly has almost no usable information.
 - Keep the report short: 1 to 3 bullets per section.
 - Return ONLY the report. Do not explain your process.
+
+Interpretation guidance:
+- If heart rate average looks reasonable but max is clearly higher than average, say there were intermittent elevations rather than saying the whole period was abnormal.
+- If SpO2 average is reassuring but the minimum dips lower, mention mostly reassuring oxygenation with brief lower readings that may warrant review.
+- If alert counts are high, say there were repeated alert events and highlight critical alerts separately.
+- For follow-up, suggest review priorities based on the strongest signal in the data rather than writing a generic placeholder.
+- Do not repeat the same sentence structure in every section.
 
 Required output:
 ## Remote monitoring summary
